@@ -146,7 +146,6 @@ async def summarize_file(
 
             full_summary = ''
 
-            # Simple, direct prompt for standard Instruct models
             stream = await client.chat.completions.create(
                 model='local-model',
                 messages=[
@@ -251,7 +250,6 @@ async def generate_structure_sequentially(
         page_match = re.search(r'_(\d+)\.md$', file_name)
         page_num_str = f"(Page {int(page_match.group(1))})" if page_match else ''  # noqa: E501
 
-        # Build prompt
         prompt = STRUCTURE_PROMPT_TEMPLATE.format(
             deck_title=deck_title,
             recent_docs_json=json.dumps(recent_docs),
@@ -445,6 +443,64 @@ async def repair_document_pages(
     print('Done repairing pages.')
 
 
+def combine_cleaned_pages(root_path: Path) -> None:
+    """Join all cleaned pages into a single combined markdown file."""
+    structure_file = root_path / 'structure.json'
+    if not structure_file.exists():
+        print('No structure.json found, skipping combination.')
+        return
+
+    try:
+        state = json.loads(structure_file.read_text(encoding='utf-8'))
+    except Exception as e:
+        print(f"Failed to load structure for combination: {e}")
+        return
+
+    deck_title = state.get('deck_title', 'Untitled File Deck')
+    docs = state.get('documents', [])
+    if not docs:
+        print('No documents found in structure, skipping combination.')
+        return
+
+    # Determine common prefix from the first file name
+    prefix = ''
+    first_page = docs[0].get('pages', [None])[0]
+    if first_page:
+        match = re.match(r'^(.*)_\d+\.md$', first_page)
+        if match:
+            prefix = match.group(1)
+
+    output_filename = f"{prefix}_cleaned_combined.md" if prefix else '_cleaned_combined.md'  # noqa: E501
+    output_path = root_path / output_filename
+
+    print(f"\nCombining pages into {output_path.name}...")
+
+    combined_content = [f"# {deck_title}\n"]
+    cleaned_dir = root_path / 'cleaned'
+
+    for doc in docs:
+        doc_title = doc.get('title', 'Untitled Document')
+        pages = doc.get('pages', [])
+        if not pages:
+            continue
+
+        combined_content.append(f"## {doc_title}\n")
+
+        for page_name in pages:
+            page_file = cleaned_dir / page_name
+            if page_file.exists():
+                combined_content.append(f"<!-- Page: {page_name} -->")
+                content = page_file.read_text(encoding='utf-8').strip()
+                combined_content.append(content)
+                combined_content.append('')  # Extra newline between pages
+
+    try:
+        output_path.write_text('\n'.join(combined_content), encoding='utf-8')
+        print(f"✅ Successfully created {output_path.name}")
+    except Exception as e:
+        print(f"❌ Failed to write combined file: {e}")
+
+
 async def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(
@@ -541,7 +597,6 @@ async def main() -> None:
     except Exception as e:
         logger.error(f"Failed to save checkpoint: {e}")
 
-    # Always output final summaries to stdout
     print('\n' + '='*40)
     print('FINAL SUMMARIES')
     print('='*40)
@@ -565,64 +620,6 @@ async def main() -> None:
     await repair_document_pages(client, root_path, args.concurrency)
 
     combine_cleaned_pages(root_path)
-
-
-def combine_cleaned_pages(root_path: Path) -> None:
-    """Join all cleaned pages into a single combined markdown file."""
-    structure_file = root_path / 'structure.json'
-    if not structure_file.exists():
-        print('No structure.json found, skipping combination.')
-        return
-
-    try:
-        state = json.loads(structure_file.read_text(encoding='utf-8'))
-    except Exception as e:
-        print(f"Failed to load structure for combination: {e}")
-        return
-
-    deck_title = state.get('deck_title', 'Untitled File Deck')
-    docs = state.get('documents', [])
-    if not docs:
-        print('No documents found in structure, skipping combination.')
-        return
-
-    # Determine common prefix from the first file name
-    prefix = ''
-    first_page = docs[0].get('pages', [None])[0]
-    if first_page:
-        match = re.match(r'^(.*)_\d+\.md$', first_page)
-        if match:
-            prefix = match.group(1)
-
-    output_filename = f"{prefix}_cleaned_combined.md" if prefix else '_cleaned_combined.md'  # noqa: E501
-    output_path = root_path / output_filename
-
-    print(f"\nCombining pages into {output_path.name}...")
-
-    combined_content = [f"# {deck_title}\n"]
-    cleaned_dir = root_path / 'cleaned'
-
-    for doc in docs:
-        doc_title = doc.get('title', 'Untitled Document')
-        pages = doc.get('pages', [])
-        if not pages:
-            continue
-
-        combined_content.append(f"## {doc_title}\n")
-
-        for page_name in pages:
-            page_file = cleaned_dir / page_name
-            if page_file.exists():
-                combined_content.append(f"<!-- Page: {page_name} -->")
-                content = page_file.read_text(encoding='utf-8').strip()
-                combined_content.append(content)
-                combined_content.append('')  # Extra newline between pages
-
-    try:
-        output_path.write_text('\n'.join(combined_content), encoding='utf-8')
-        print(f"✅ Successfully created {output_path.name}")
-    except Exception as e:
-        print(f"❌ Failed to write combined file: {e}")
 
 
 if __name__ == '__main__':
