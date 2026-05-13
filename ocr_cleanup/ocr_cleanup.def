@@ -38,7 +38,7 @@ From: ghcr.io/ggml-org/llama.cpp:server-intel
     export NETID={{ NETID }}
     export SCRIPTS_DIR=/mmfs1/gscratch/stf/{{ NETID }}/hyak_scripts/ocr_cleanup
     export HF_HOME=/mmfs1/gscratch/stf/{{ NETID }}/.cache/huggingface
-    export PATH=/usr/local/bin:$PATH
+    export PATH=/app:/usr/local/bin:$PATH
 
 %labels
     Author Mestrace
