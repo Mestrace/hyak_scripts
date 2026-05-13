@@ -11,7 +11,8 @@
 
 # Configuration - Update these or pass as environment variables
 NETID=${NETID:-$(whoami)}
-HF_MODEL=${HF_MODEL:-"ggml-org/gemma-3-1b-it-GGUF:Q4_K_M"}
+# HF_MODEL should now be the absolute path to your .gguf file
+HF_MODEL=${HF_MODEL:-"/mmfs1/gscratch/stf/${NETID}/models/qwen3-4b-instruct-2507-q8_0.gguf"}
 DECK_TITLE=${DECK_TITLE:-"OCR Cleanup Project"}
 SCAN_PATH=${SCAN_PATH:-"/path/to/your/scans"} # Update this!
 PORT=8080
@@ -21,23 +22,24 @@ PROJECT_DIR="/mmfs1/gscratch/stf/${NETID}"
 BASE_DIR="${PROJECT_DIR}/hyak_scripts/ocr_cleanup"
 LOG_DIR="${PROJECT_DIR}/log"
 CONTAINER="${BASE_DIR}/ocr_cleanup.sif"
-HF_CACHE="${PROJECT_DIR}/.cache/huggingface"
 
 # Ensure directories exist
 mkdir -p "${LOG_DIR}"
-mkdir -p "${HF_CACHE}"
-
-# Export environment variables for the container
-export APPTAINERENV_HF_HOME="${HF_CACHE}"
 
 echo "Job ${SLURM_JOB_ID} starting at $(date)"
 echo "Project Directory: ${PROJECT_DIR}"
-echo "Using Model: ${HF_MODEL}"
+echo "Using Model Path: ${HF_MODEL}"
 
 # Verification
 if [ ! -f "${CONTAINER}" ]; then
     echo "ERROR: Apptainer image not found at ${CONTAINER}"
     echo "Please build it first: apptainer build --fakeroot --build-arg NETID=${NETID} ${CONTAINER} ${BASE_DIR}/ocr_cleanup.def"
+    exit 1
+fi
+
+if [ ! -f "${HF_MODEL}" ]; then
+    echo "ERROR: GGUF model file not found at ${HF_MODEL}"
+    echo "Please download it first to your models folder."
     exit 1
 fi
 
@@ -50,7 +52,7 @@ echo "Starting llama-server..."
 
 # 1. Start llama-server in the background
 apptainer exec --bind /mmfs1/gscratch/stf --home "${PROJECT_DIR}" "${CONTAINER}" \
-    llama-server -hf "${HF_MODEL}" --port "${PORT}" --host 0.0.0.0 > "${LOG_DIR}/llama_server_${SLURM_JOB_ID}.log" 2>&1 &
+    llama-server -m "${HF_MODEL}" --port "${PORT}" --host 0.0.0.0 > "${LOG_DIR}/llama_server_${SLURM_JOB_ID}.log" 2>&1 &
 
 SERVER_PID=$!
 
