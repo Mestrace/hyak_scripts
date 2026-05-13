@@ -55,8 +55,9 @@ if [[ "${BASE_URL}" == *"localhost"* ]]; then
     if [ $LLAMA_THREADS -lt 1 ]; then LLAMA_THREADS=1; fi
 
     echo "Starting local llama-server with ${LLAMA_THREADS} threads..."
+    # Set LD_LIBRARY_PATH to include /app and /usr/local/lib where Intel libraries usually reside
     apptainer exec --bind /mmfs1/gscratch/stf --home "${PROJECT_DIR}" "${CONTAINER}" \
-        env LD_LIBRARY_PATH=/app /app/llama-server -m "${HF_MODEL}" -t "${LLAMA_THREADS}" --port "${PORT}" --host 0.0.0.0 > "${LOG_DIR}/llama_server_${SLURM_JOB_ID}.log" 2>&1 &
+        env LD_LIBRARY_PATH="/app:/app/lib:/usr/local/lib:$LD_LIBRARY_PATH" /app/llama-server -m "${HF_MODEL}" -t "${LLAMA_THREADS}" --port "${PORT}" --host 0.0.0.0 > "${LOG_DIR}/llama_server_${SLURM_JOB_ID}.log" 2>&1 &
     SERVER_PID=$!
 
     # 2. Wait for server readiness
