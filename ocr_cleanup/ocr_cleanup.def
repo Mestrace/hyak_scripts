@@ -1,0 +1,75 @@
+Bootstrap: docker
+From: ghcr.io/ggml-org/llama.cpp:server-intel
+
+%arguments
+    NETID=default_user
+    HF_MODEL=ggml-org/gemma-3-1b-it-GGUF:Q4_K_M
+
+%help
+    This image provides the llama-server environment along with Python 3.12
+    for running OCR cleanup scripts.
+
+    Arguments:
+    - NETID: Your UW NetID (used for gscratch/stf paths).
+    - HF_MODEL: The Hugging Face model to pull during build (Repo:File or Repo).
+
+%post
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Consolidate package installation
+    apt-get update && apt-get install -y --no-install-recommends \
+        software-properties-common \
+        curl \
+        git \
+        bc \
+        ca-certificates
+
+    # Setup Python 3.12
+    add-apt-repository -y ppa:deadsnakes/ppa
+    apt-get update && apt-get install -y --no-install-recommends \
+        python3.12 \
+        python3.12-venv \
+        python3.12-dev
+
+    # Link python3 to python3.12
+    ln -sf /usr/bin/python3.12 /usr/bin/python3
+    curl -sS https://bootstrap.pypa.io/get-pip.py | python3
+
+    # Install Python dependencies
+    python3 -m pip install --no-cache-dir \
+        "openai>=1.0.0" \
+        "pydantic>=2.0.0" \
+        "httpx" \
+        "huggingface_hub"
+
+    # Bake model into image
+    export HF_HOME=/models
+    mkdir -p /models
+
+    # Parse model argument (Repo:File format)
+    MODEL="{{ HF_MODEL }}"
+    if echo "$MODEL" | grep -q ":"; then
+        REPO=$(echo "$MODEL" | cut -d':' -f1)
+        FILE=$(echo "$MODEL" | cut -d':' -f2)
+        huggingface-cli download "$REPO" "$FILE" --local-dir /models --local-dir-use-symlinks False
+    else
+        huggingface-cli download "$MODEL" --local-dir /models --local-dir-use-symlinks False
+    fi
+
+    # Cleanup
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    export NETID={{ NETID }}
+    export HF_MODEL={{ HF_MODEL }}
+    export SCRIPTS_DIR=/mmfs1/gscratch/stf/{{ NETID }}
+    export HF_HOME=/mmfs1/gscratch/stf/{{ NETID }}/.cache/huggingface
+    export PATH=/usr/local/bin:$PATH
+
+%labels
+    Author Mestrace
+    Version 3.1
+    Description llama-server-intel + Python 3.12 for OCR Cleanup
+    NetID {{ NETID }}
+    Model {{ HF_MODEL }}
