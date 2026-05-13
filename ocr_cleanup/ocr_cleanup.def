@@ -18,26 +18,15 @@ From: ghcr.io/ggml-org/llama.cpp:server-intel
 
     # Consolidate package installation
     apt-get update && apt-get install -y --no-install-recommends \
-        software-properties-common \
         curl \
         git \
         bc \
-        ca-certificates
+        ca-certificates \
+        python3-dev \
+        python3-pip
 
-    # Print current python3 version for diagnostics
-    echo "Python version before installation check:"
-    python3 --version || echo "python3 not found"
-
-    # Setup Python 3.12
-    add-apt-repository -y ppa:deadsnakes/ppa
-    apt-get update && apt-get install -y --no-install-recommends \
-        python3.12 \
-        python3.12-venv \
-        python3.12-dev
-
-    # Link python3 to python3.12
-    ln -sf /usr/bin/python3.12 /usr/bin/python3
-    curl -sS https://bootstrap.pypa.io/get-pip.py | python3
+    # Ensure pip is ready
+    python3 -m pip install --upgrade pip --break-system-packages
 
     # Install Python dependencies
     python3 -m pip install --no-cache-dir --break-system-packages \
@@ -59,7 +48,7 @@ From: ghcr.io/ggml-org/llama.cpp:server-intel
 
 %labels
     Author Mestrace
-    Version 3.2
+    Version 3.3
     Description llama-server-intel + Python 3.12 for OCR Cleanup
     NetID {{ NETID }}
     Model {{ HF_MODEL }}
