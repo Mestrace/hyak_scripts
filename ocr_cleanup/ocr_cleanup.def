@@ -24,6 +24,10 @@ From: ghcr.io/ggml-org/llama.cpp:server-intel
         bc \
         ca-certificates
 
+    # Print current python3 version for diagnostics
+    echo "Python version before installation check:"
+    python3 --version || echo "python3 not found"
+
     # Setup Python 3.12
     add-apt-repository -y ppa:deadsnakes/ppa
     apt-get update && apt-get install -y --no-install-recommends \
@@ -36,7 +40,7 @@ From: ghcr.io/ggml-org/llama.cpp:server-intel
     curl -sS https://bootstrap.pypa.io/get-pip.py | python3
 
     # Install Python dependencies
-    python3 -m pip install --no-cache-dir \
+    python3 -m pip install --no-cache-dir --break-system-packages \
         "openai>=1.0.0" \
         "pydantic>=2.0.0" \
         "httpx" \
