@@ -62,12 +62,19 @@ if [[ "${BASE_URL}" == *"localhost"* ]]; then
     # 2. Wait for server readiness
     echo "Waiting for server to initialize..."
     for i in {1..30}; do
+        # Check if the process is still alive
+        if ! kill -0 $SERVER_PID 2>/dev/null; then
+            echo "ERROR: llama-server process died unexpectedly. Checking logs at ${LOG_DIR}/llama_server_${SLURM_JOB_ID}.log"
+            exit 1
+        fi
+
         if curl -s "http://localhost:${PORT}/health" | grep -q '{"status":"ok"}'; then
             echo "Server is ready!"
             break
         fi
+
         if [ $i -eq 30 ]; then
-            echo "Server failed to start. Logs: ${LOG_DIR}/llama_server_${SLURM_JOB_ID}.log"
+            echo "Server failed to start in time. Logs: ${LOG_DIR}/llama_server_${SLURM_JOB_ID}.log"
             kill $SERVER_PID
             exit 1
         fi
