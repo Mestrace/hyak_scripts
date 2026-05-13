@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH --job-name=ocr_cleanup
 #SBATCH --account=stf
-#SBATCH --partition=compute
+#SBATCH --partition=compute-g2
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=8
-#SBATCH --mem=32G
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=64G
 #SBATCH --time=02:00:00
 #SBATCH --chdir=.
 
@@ -16,7 +16,7 @@ HF_MODEL=${HF_MODEL:-"/mmfs1/gscratch/stf/${NETID}/models/qwen3-4b-instruct-2507
 DECK_TITLE=${DECK_TITLE:-"OCR Cleanup Project"}
 SCAN_PATH=${SCAN_PATH:-"/path/to/your/scans"} # Mandatory override
 PORT=8080
-CONCURRENCY=${CONCURRENCY:-2}
+CONCURRENCY=${CONCURRENCY:-4}
 BASE_URL=${BASE_URL:-"http://localhost:${PORT}/v1"}
 
 # Absolute Paths
@@ -27,6 +27,11 @@ CONTAINER="${BASE_DIR}/ocr_cleanup.sif"
 
 # Ensure log directory exists
 mkdir -p "${LOG_DIR}"
+
+# --- AMD Genoa Optimization ---
+# Match OMP_NUM_THREADS to your --cpus-per-task for efficient CPU execution
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+export MKL_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
 echo "Job ${SLURM_JOB_ID} starting at $(date)"
 echo "Using Model Path: ${HF_MODEL}"
