@@ -5,7 +5,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16
-#SBATCH --mem=64G
+#SBATCH --mem=32G
 #SBATCH --time=02:00:00
 #SBATCH --chdir=.
 
@@ -61,7 +61,14 @@ if [[ "${BASE_URL}" == *"localhost"* ]]; then
 
     echo "Starting local llama-server with ${LLAMA_THREADS} threads..."
     apptainer exec --bind /mmfs1/gscratch/stf --home "${PROJECT_DIR}" "${CONTAINER}" \
-        /app/llama-server -m "${HF_MODEL}" -t "${LLAMA_THREADS}" --port "${PORT}" --host 0.0.0.0 --no-warmup > "${LOG_DIR}/llama_server_${SLURM_JOB_ID}.log" 2>&1 &
+        /app/llama-server \
+        -m "${HF_MODEL}" \
+        -t "${LLAMA_THREADS}" \
+        -c 16384 \
+        -np "${CONCURRENCY}" \
+        --port "${PORT}" \
+        --host 0.0.0.0 \
+        --no-warmup > "${LOG_DIR}/llama_server_${SLURM_JOB_ID}.log" 2>&1 &
     SERVER_PID=$!
 
     # 2. Wait for server readiness
