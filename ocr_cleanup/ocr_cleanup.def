@@ -6,22 +6,29 @@ From: ghcr.io/ggml-org/llama.cpp:server-intel
 
 %help
     This image provides the llama-server environment along with Python 3.12
-    for running OCR cleanup scripts.
-
-    Arguments:
-    - NETID: Your UW NetID (used for gscratch/stf paths).
+    and Intel oneAPI runtime libraries for OCR cleanup.
 
 %post
     export DEBIAN_FRONTEND=noninteractive
 
-    # Consolidate package installation
+    # Install prerequisites
     apt-get update && apt-get install -y --no-install-recommends \
         curl \
+        ca-certificates \
+        gnupg \
+        wget \
         git \
         bc \
-        ca-certificates \
         python3-dev \
         python3-pip
+
+    # Add Intel oneAPI repository
+    wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor > /usr/share/keyrings/intel-sw-products.gpg
+    echo "deb [signed-by=/usr/share/keyrings/intel-sw-products.gpg] https://apt.repos.intel.com/oneapi all main" > /etc/apt/sources.list.d/oneAPI.list
+
+    # Install Intel runtime libraries
+    apt-get update && apt-get install -y --no-install-recommends \
+        intel-oneapi-runtime-libs
 
     # Install Python dependencies
     python3 -m pip install --no-cache-dir --break-system-packages \
@@ -38,10 +45,12 @@ From: ghcr.io/ggml-org/llama.cpp:server-intel
     export NETID={{ NETID }}
     export SCRIPTS_DIR=/mmfs1/gscratch/stf/{{ NETID }}/hyak_scripts/ocr_cleanup
     export HF_HOME=/mmfs1/gscratch/stf/{{ NETID }}/.cache/huggingface
+    # Comprehensive library path for Intel and llama.cpp
+    export LD_LIBRARY_PATH="/app:/app/lib:/usr/local/lib:$LD_LIBRARY_PATH"
     export PATH=/app:/usr/local/bin:$PATH
 
 %labels
     Author Mestrace
-    Version 3.4
-    Description llama-server-intel + Python 3.12 for OCR Cleanup
+    Version 3.5
+    Description llama-server-intel + Intel oneAPI Runtime + Python 3.12
     NetID {{ NETID }}
