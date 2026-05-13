@@ -61,7 +61,7 @@ if [[ "${BASE_URL}" == *"localhost"* ]]; then
 
     echo "Starting local llama-server with ${LLAMA_THREADS} threads..."
     apptainer exec --bind /mmfs1/gscratch/stf --home "${PROJECT_DIR}" "${CONTAINER}" \
-        /app/llama-server -m "${HF_MODEL}" -t "${LLAMA_THREADS}" --port "${PORT}" --host 0.0.0.0 > "${LOG_DIR}/llama_server_${SLURM_JOB_ID}.log" 2>&1 &
+        /app/llama-server -m "${HF_MODEL}" -t "${LLAMA_THREADS}" --port "${PORT}" --host 0.0.0.0 --no-warmup > "${LOG_DIR}/llama_server_${SLURM_JOB_ID}.log" 2>&1 &
     SERVER_PID=$!
 
     # 2. Wait for server readiness
