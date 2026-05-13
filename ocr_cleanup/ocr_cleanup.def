@@ -3,7 +3,6 @@ From: ghcr.io/ggml-org/llama.cpp:server-intel
 
 %arguments
     NETID=default_user
-    HF_MODEL=ggml-org/gemma-3-1b-it-GGUF:Q4_K_M
 
 %help
     This image provides the llama-server environment along with Python 3.12
@@ -11,7 +10,6 @@ From: ghcr.io/ggml-org/llama.cpp:server-intel
 
     Arguments:
     - NETID: Your UW NetID (used for gscratch/stf paths).
-    - HF_MODEL: The Hugging Face model identifier (used at runtime via -hf flag).
 
 %post
     export DEBIAN_FRONTEND=noninteractive
@@ -24,9 +22,6 @@ From: ghcr.io/ggml-org/llama.cpp:server-intel
         ca-certificates \
         python3-dev \
         python3-pip
-
-    # Ensure pip is ready
-    python3 -m pip install --upgrade pip --break-system-packages
 
     # Install Python dependencies
     python3 -m pip install --no-cache-dir --break-system-packages \
@@ -41,14 +36,12 @@ From: ghcr.io/ggml-org/llama.cpp:server-intel
 
 %environment
     export NETID={{ NETID }}
-    export HF_MODEL={{ HF_MODEL }}
     export SCRIPTS_DIR=/mmfs1/gscratch/stf/{{ NETID }}
     export HF_HOME=/mmfs1/gscratch/stf/{{ NETID }}/.cache/huggingface
     export PATH=/usr/local/bin:$PATH
 
 %labels
     Author Mestrace
-    Version 3.3
+    Version 3.4
     Description llama-server-intel + Python 3.12 for OCR Cleanup
     NetID {{ NETID }}
-    Model {{ HF_MODEL }}
