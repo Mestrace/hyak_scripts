@@ -1,0 +1,9 @@
+Bootstrap: docker
+From: paddlepaddle/paddle:3.3.1-gpu-cuda13.0-cudnn9.13
+
+%post
+    apt-get -y update
+    apt-get -y upgrade
+    pip install paddleocr[all] pypdfium2
+    # Trigger download and build of PP-StructureV3 pipeline to cache it in the image
+    python3 -c "from paddleocr import PPStructureV3; pipeline = PPStructureV3(enable_hpi=True)"

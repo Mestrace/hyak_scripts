@@ -1,0 +1,14 @@
+Bootstrap: docker
+From: paddlepaddle/paddle:3.3.1
+
+%post
+    apt-get -y update
+    apt-get -y upgrade
+    pip install "paddlex<3.5" "paddlepaddle<3.3" paddleocr[all] pypdfium2
+    # Install High Performance Inference (HPI) for CPU
+    paddleocr install_hpi_deps cpu
+    pip show paddleocr
+    pip show paddlepaddle
+    pip show paddlex
+    # Trigger download and build of PP-StructureV3 pipeline to cache it in the image
+    python3 -c "from paddleocr import PPStructureV3; pipeline = PPStructureV3(enable_hpi=True)"
