@@ -190,7 +190,7 @@ class FolderOCRProcessor:
             logger.info('All OCR pipelines closed and memory freed.')
 
 
-def decompose_pdf(pdf_path: Path) -> Path:
+def decompose_pdf(pdf_path: Path, output_dir: Path | None = None) -> Path:
     """
     Decompose each page of a PDF into an image and return the directory.
     Attempts to extract raw images if a page contains exactly one image object,
@@ -204,7 +204,8 @@ def decompose_pdf(pdf_path: Path) -> Path:
             "Please install it with 'pip install pypdfium2'",
         )
 
-    output_dir = pdf_path.parent / pdf_path.stem
+    if output_dir is None:
+        output_dir = pdf_path.parent / pdf_path.stem
     output_dir.mkdir(parents=True, exist_ok=True)
 
     logger.info(f"Decomposing PDF: {pdf_path} -> {output_dir}")
@@ -273,7 +274,7 @@ if __name__ == '__main__':
     if input_path.is_dir():
         input_folder = input_path
     elif input_path.is_file() and input_path.suffix.lower() == '.pdf':
-        input_folder = decompose_pdf(input_path)
+        input_folder = decompose_pdf(input_path, Path(args.output_dir))
     else:
         parser.error(
             f"Unsupported input type: {input_path}. "

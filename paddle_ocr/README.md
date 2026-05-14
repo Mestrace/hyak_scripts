@@ -19,11 +19,11 @@ Build to `/tmp` for speed, then move to your project directory, and you can buil
 module load apptainer
 
 # Use Either: 1) CPU Image
-apptainer build --fakeroot /tmp/paddle_cpu.sif paddle_cpu.def
+apptainer build --fakeroot /tmp/paddle_cpu.sif hyak_scripts/paddle_ocr/paddle_cpu.def
 mv /tmp/paddle_cpu.sif .
 
 # OR: 2) GPU Image
-apptainer build --fakeroot /tmp/paddle_gpu.sif paddle_gpu.def
+apptainer build --fakeroot /tmp/paddle_gpu.sif hyak_scripts/paddle_ocr/paddle_gpu.def
 mv /tmp/paddle_gpu.sif .
 ```
 
@@ -44,7 +44,7 @@ The `paddle_ocr.slurm` script is parameterized to handle both CPU and GPU workfl
 
 Logs (stdout/stderr) will be saved in `/mmfs1/gscratch/stf/<your_netid>/log/`.
 
-### Step 2.1: CPU Execution
+### Step 2.1: CPU Execution (Single File/Folder)
 To run on CPU with MKLDNN and HPI optimization:
 ```bash
 # For a directory of images:
@@ -55,7 +55,32 @@ sbatch --partition=ckpt-all --cpus-per-task=20 --mem=32g --export=ALL,INPUT=./do
 ```
 
 ### Step 2.2: GPU Execution
-To run on GPU (A100), set `USE_GPU=true`. HPI can still be enabled for supported layers:
+Set `USE_GPU=true`. HPI can still be enabled for supported layers:
 ```bash
 sbatch --partition=ckpt-all --account=stf-gpu --gres=gpu:1 --cpus-per-task=8 --mem=32g --export=ALL,USE_GPU=true,INPUT=./images,OUTPUT_DIR=./output,WORKERS=2 paddle_ocr.slurm
 ```
+
+### Step 2.3: Job Array Execution (Multiple PDF Files)
+To process many PDF files at once, use `paddle_ocr_pdf_array.slurm`.
+
+1. **Create a task list** (a text file with one PDF path per line):
+   ```bash
+   find /path/to/pdfs -name "*.pdf" > pdf_list.txt
+   ```
+
+2. **Submit the array job**:
+   ```bash
+   # If pdf_list.txt has 50 files, use --array=0-49
+   sbatch --partition=ckpt-all --array=0-49 --cpus-per-task=8 --mem=32g --export=ALL,INPUT_LIST=pdf_list.txt,OUTPUT_ROOT=./ocr_results paddle_ocr_pdf_array.slurm
+   ```
+   Each PDF will be processed in its own subdirectory within `OUTPUT_ROOT` (e.g., `./ocr_results/filename/`).
+
+## Performance Tips: Single Job vs. Job Array
+
+| Scenario | Recommended Approach | Reason |
+|----------|----------------------|--------|
+| **100-500 Images in one folder** | **Single Job** (`paddle_ocr.slurm`) | Avoids "Startup Tax" (loading models/containers 100x). Uses internal multi-threading (`WORKERS`) for speed. |
+| **Dozens of PDF files** | **Job Array** (`paddle_ocr_pdf_array.slurm`) | Distributes heavy PDF decomposition and processing across many nodes simultaneously. |
+| **10,000+ Images** | **Job Array** | Prevents a single job from timing out and allows for massive horizontal scaling. |
+
+**Hint:** For most "archival box" workflows where you have a folder of JPEGs, a single job with high `--cpus-per-task` (e.g., 40) and `WORKERS=20` is the fastest path.
