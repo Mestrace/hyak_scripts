@@ -48,16 +48,13 @@ Logs (stdout/stderr) will be saved in `/mmfs1/gscratch/stf/<your_netid>/log/`.
 To run on CPU with MKLDNN and HPI optimization:
 ```bash
 # For a directory of images:
-sbatch --partition=ckpt-all --cpus-per-task=20 --mem=32g --export=ALL,INPUT=./images,OUTPUT_DIR=./output,WORKERS=4,CPU_THREADS=10,ENABLE_HPI=true paddle_ocr.slurm
-
-# For a PDF file:
-sbatch --partition=ckpt-all --cpus-per-task=20 --mem=32g --export=ALL,INPUT=./document.pdf,OUTPUT_DIR=./output,WORKERS=4,CPU_THREADS=10,ENABLE_HPI=true paddle_ocr.slurm
+sbatch --partition=ckpt-all --cpus-per-task=20 --mem=32g --export=ALL,INPUT=./images,OUTPUT_DIR=./output,WORKERS=2,CPU_THREADS=10,ENABLE_HPI=true paddle_ocr.slurm
 ```
 
 ### Step 2.2: GPU Execution
 Set `USE_GPU=true`. HPI can still be enabled for supported layers:
 ```bash
-sbatch --partition=ckpt-all --account=stf-gpu --gres=gpu:1 --cpus-per-task=8 --mem=32g --export=ALL,USE_GPU=true,INPUT=./images,OUTPUT_DIR=./output,WORKERS=2 paddle_ocr.slurm
+sbatch --partition=ckpt-all --gres=gpu:1 --cpus-per-task=8 --mem=32g --export=ALL,INPUT=.,OUTPUT_DIR=./out/,WORKERS=1,CPU_THREADS=16,USE_GPU=true paddle_ocr.slurm
 ```
 
 ### Step 2.3: Job Array Execution (Multiple PDF Files)
