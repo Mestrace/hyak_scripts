@@ -14,6 +14,7 @@
 # Configuration - Update these or pass as environment variables
 NETID=${NETID:-$(whoami)}
 USE_GPU=${USE_GPU:-false}
+export APPTAINERENV_PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK=True
 
 # OCR Options
 INPUT=${INPUT:-""}

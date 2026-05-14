@@ -85,7 +85,7 @@ class FolderOCRProcessor:
                     use_doc_unwarping=True,
                     use_seal_recognition=False,
                     use_formula_recognition=False,
-                    use_gpu=self.config.use_gpu,
+                    device='gpu:0' if self.config.use_gpu else 'cpu',
                     enable_mkldnn=not self.config.use_gpu,
                     text_rec_score_thresh=0.15,
                     enable_hpi=self.config.enable_hpi,
