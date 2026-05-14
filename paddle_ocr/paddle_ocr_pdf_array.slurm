@@ -23,6 +23,8 @@ export APPTAINERENV_PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK=True
 # OCR Options
 INPUT_LIST=${INPUT_LIST:-""}
 OUTPUT_ROOT=${OUTPUT_ROOT:-""}
+# Strip trailing slash if present to avoid double slashes in paths
+OUTPUT_ROOT="${OUTPUT_ROOT%/}"
 WORKERS=${WORKERS:-1}
 CPU_THREADS=${CPU_THREADS:-$SLURM_CPUS_PER_TASK}
 ENABLE_HPI=${ENABLE_HPI:-false}
@@ -63,9 +65,9 @@ PDF_NAME=$(basename "${INPUT_PDF}")
 PDF_STEM="${PDF_NAME%.*}"
 OUTPUT_DIR="${OUTPUT_ROOT}/${PDF_STEM}"
 
-# Avoid duplicated efforts: check if output directory exists and is not empty
-if [ -d "${OUTPUT_DIR}" ] && [ "$(ls -A "${OUTPUT_DIR}" 2>/dev/null)" ]; then
-    echo "SKIPPING: ${OUTPUT_DIR} already exists and has content."
+# Avoid duplicated efforts: check if output directory exists and has the final combined file
+if [ -d "${OUTPUT_DIR}" ] && [ "$(ls "${OUTPUT_DIR}/"*_combined.md 2>/dev/null)" ]; then
+    echo "SKIPPING: ${OUTPUT_DIR} already contains a combined.md file."
     echo "If you wish to re-process this PDF, please remove the directory and re-submit: rm -rf ${OUTPUT_DIR}"
     exit 0
 fi
