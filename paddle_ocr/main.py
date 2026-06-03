@@ -12,6 +12,8 @@ from pathlib import Path
 
 from paddleocr import PPStructureV3
 
+VALID_IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png'}
+
 
 def setup_logging():
     logger = logging.getLogger('paddle_ocr')
@@ -131,21 +133,20 @@ class FolderOCRProcessor:
         """
         Process all images in the folder and yield a combined markdown file.
         """
-        # Find all JPG/JPEG files
-        image_paths = []
-        for ext in ('*.jpg', '*.jpeg', '*.JPG', '*.JPEG'):
-            image_paths.extend([
-                p for p in self.config.input_path.glob(ext)
-                if (
-                    not p.stem.endswith('_res') and
-                    not p.stem.endswith('_preprocessed_img')
-                )
-            ])
+        # Find all supported image files
+        image_paths = [
+            p for p in self.config.input_path.iterdir()
+            if p.is_file() and p.suffix.lower() in VALID_IMAGE_EXTENSIONS and
+            not p.stem.endswith('_res') and
+            not p.stem.endswith('_preprocessed_img')
+        ]
         # Sort paths to ensure sequential markdown concatenation
         image_paths = sorted(image_paths)
 
         if not image_paths:
-            logger.warning(f"No JPEG images found in {self.config.input_path}")
+            logger.warning(
+                f"No supported images found in {self.config.input_path}",
+            )
             return None
         try:
             results_text = []
@@ -174,7 +175,7 @@ class FolderOCRProcessor:
             final_markdown = '\n\n'.join(results_text)
 
             combined_md_path = self.config.output_folder / \
-                f"{self.config.input_path.name}_combined.md"
+                f"{self.config.input_path.stem}_combined.md"
             combined_md_path.write_text(final_markdown, encoding='utf-8')
             return combined_md_path
         finally:
